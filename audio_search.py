@@ -1,4 +1,3 @@
-
 import streamlit as st
 import wave
 from io import BytesIO
@@ -9,6 +8,7 @@ import pandas as pd
 import re
 from nltk.corpus import stopwords
 import nltk
+import os
 
 # Download NLTK stopwords if not already downloaded
 nltk.download('stopwords')
@@ -86,7 +86,7 @@ def audio_search_page(api_key):
         except Exception as e:
             st.error(f"Error deleting index: {str(e)}")
 
-    # Replace the Parquet file uploader with a text input for file path
+    # Accept file path input for the Parquet file
     parquet_file_path = st.text_input("📁 Enter the path of the Parquet file containing audio data", key="parquet_audio_path")
 
     # Define utility functions
@@ -208,10 +208,17 @@ def audio_search_page(api_key):
     # Handle Parquet file loading and embedding creation based on file path
     if parquet_file_path:
         try:
-            # Use the provided file path to load the Parquet file
-            df = pd.read_parquet(parquet_file_path).head(75)
-            st.session_state.df = df  # Store the DataFrame in session state
-            st.write("Dataset loaded successfully.")
+            # Strip any quotes from the path and handle Windows-style paths
+            parquet_file_path = parquet_file_path.strip().strip('"')
+            
+            # Validate if the path exists
+            if os.path.exists(parquet_file_path):
+                # Load the Parquet file from the path
+                df = pd.read_parquet(parquet_file_path).head(75)
+                st.session_state.df = df  # Store the DataFrame in session state
+                st.write("Dataset loaded successfully.")
+            else:
+                st.error(f"File does not exist at the given path: {parquet_file_path}")
 
             if st.button("🔍 Preview Data"):
                 display_first_5_audios(df)
